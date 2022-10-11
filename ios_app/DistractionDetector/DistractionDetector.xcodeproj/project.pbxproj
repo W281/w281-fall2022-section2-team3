@@ -17,7 +17,7 @@
 		6C82D56B28F5D02F0051E5F6 /* MainViewController+PhotoPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C82D56728F5D02F0051E5F6 /* MainViewController+PhotoPicker.swift */; };
 		6C82D56D28F5D0610051E5F6 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6C82D56C28F5D0610051E5F6 /* LaunchScreen.storyboard */; };
 		6C82D56F28F5D0BE0051E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C82D56E28F5D0BE0051E5F6 /* AppDelegate.swift */; };
-		6CE55ACE28F6175600541D4D /* DriverDistractionVggClassifier.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 6CE55ACD28F6175600541D4D /* DriverDistractionVggClassifier.mlmodel */; };
+		6CE55AD228F6191E00541D4D /* DriverDistractionVggClassifier.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 6CE55AD128F6191E00541D4D /* DriverDistractionVggClassifier.mlmodel */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,7 +34,7 @@
 		6C82D56728F5D02F0051E5F6 /* MainViewController+PhotoPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "MainViewController+PhotoPicker.swift"; sourceTree = "<group>"; };
 		6C82D56C28F5D0610051E5F6 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		6C82D56E28F5D0BE0051E5F6 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		6CE55ACD28F6175600541D4D /* DriverDistractionVggClassifier.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; name = DriverDistractionVggClassifier.mlmodel; path = ../../../output/DriverDistractionVggClassifier.mlmodel; sourceTree = "<group>"; };
+		6CE55AD128F6191E00541D4D /* DriverDistractionVggClassifier.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = DriverDistractionVggClassifier.mlmodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,7 +83,7 @@
 		6C82D55728F5C6530051E5F6 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				6CE55ACD28F6175600541D4D /* DriverDistractionVggClassifier.mlmodel */,
+				6CE55AD128F6191E00541D4D /* DriverDistractionVggClassifier.mlmodel */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -194,7 +194,7 @@
 				6C82D56B28F5D02F0051E5F6 /* MainViewController+PhotoPicker.swift in Sources */,
 				6C82D56028F5C7670051E5F6 /* VNClassificationObservation+confidenceString.swift in Sources */,
 				6C82D56828F5D02F0051E5F6 /* MainViewController.swift in Sources */,
-				6CE55ACE28F6175600541D4D /* DriverDistractionVggClassifier.mlmodel in Sources */,
+				6CE55AD228F6191E00541D4D /* DriverDistractionVggClassifier.mlmodel in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
