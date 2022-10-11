@@ -12,10 +12,13 @@ and then passes the photo to the model using the [Core ML][Core ML] framework be
 Once the model generates a prediction, Vision relays it back to the app, which presents the results to the user.
 
 This app has been built using [Classifying Images with Vision and CoreML][Classifying Images with Vision and CoreML] as reference.
+
 [Vision]: https://developer.apple.com/documentation/vision
+
 [Core ML]: https://developer.apple.com/documentation/coreml
 
 
 [Classifying Images with Vision and CoreML]: https://developer.apple.com/documentation/vision/classifying_images_with_vision_and_core_ml/
+
 [VNClassifyImageRequest]: https://developer.apple.com/documentation/vision/vnclassifyimagerequest
 

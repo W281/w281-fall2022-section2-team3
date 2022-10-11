@@ -23,3 +23,7 @@ xcuserdata/
 *.dSYM
 
 .build/
+
+input/
+output/
+.ipynb_checkpoints/

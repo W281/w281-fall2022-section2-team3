@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		6C82D54D28F5C6390051E5F6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6C82D54C28F5C6390051E5F6 /* Assets.xcassets */; };
-		6C82D55928F5C6680051E5F6 /* DriverDistractionVggClassifier.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 6C82D55828F5C6680051E5F6 /* DriverDistractionVggClassifier.mlmodel */; };
 		6C82D55C28F5C7570051E5F6 /* ImagePredictor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C82D55B28F5C7570051E5F6 /* ImagePredictor.swift */; };
 		6C82D56028F5C7670051E5F6 /* VNClassificationObservation+confidenceString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C82D55E28F5C7670051E5F6 /* VNClassificationObservation+confidenceString.swift */; };
 		6C82D56128F5C7670051E5F6 /* CGImagePropertyOrientation+UIImageOrientation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C82D55F28F5C7670051E5F6 /* CGImagePropertyOrientation+UIImageOrientation.swift */; };
@@ -18,6 +17,7 @@
 		6C82D56B28F5D02F0051E5F6 /* MainViewController+PhotoPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C82D56728F5D02F0051E5F6 /* MainViewController+PhotoPicker.swift */; };
 		6C82D56D28F5D0610051E5F6 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6C82D56C28F5D0610051E5F6 /* LaunchScreen.storyboard */; };
 		6C82D56F28F5D0BE0051E5F6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C82D56E28F5D0BE0051E5F6 /* AppDelegate.swift */; };
+		6CE55ACE28F6175600541D4D /* DriverDistractionVggClassifier.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 6CE55ACD28F6175600541D4D /* DriverDistractionVggClassifier.mlmodel */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,7 +25,6 @@
 		6C82D54028F5C6380051E5F6 /* DistractionDetector.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DistractionDetector.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C82D54C28F5C6390051E5F6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6C82D55128F5C63A0051E5F6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		6C82D55828F5C6680051E5F6 /* DriverDistractionVggClassifier.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = DriverDistractionVggClassifier.mlmodel; sourceTree = "<group>"; };
 		6C82D55B28F5C7570051E5F6 /* ImagePredictor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImagePredictor.swift; sourceTree = "<group>"; };
 		6C82D55E28F5C7670051E5F6 /* VNClassificationObservation+confidenceString.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "VNClassificationObservation+confidenceString.swift"; sourceTree = "<group>"; };
 		6C82D55F28F5C7670051E5F6 /* CGImagePropertyOrientation+UIImageOrientation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "CGImagePropertyOrientation+UIImageOrientation.swift"; sourceTree = "<group>"; };
@@ -35,6 +34,7 @@
 		6C82D56728F5D02F0051E5F6 /* MainViewController+PhotoPicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "MainViewController+PhotoPicker.swift"; sourceTree = "<group>"; };
 		6C82D56C28F5D0610051E5F6 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		6C82D56E28F5D0BE0051E5F6 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		6CE55ACD28F6175600541D4D /* DriverDistractionVggClassifier.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; name = DriverDistractionVggClassifier.mlmodel; path = ../../../output/DriverDistractionVggClassifier.mlmodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,7 +83,7 @@
 		6C82D55728F5C6530051E5F6 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				6C82D55828F5C6680051E5F6 /* DriverDistractionVggClassifier.mlmodel */,
+				6CE55ACD28F6175600541D4D /* DriverDistractionVggClassifier.mlmodel */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -190,11 +190,11 @@
 				6C82D56F28F5D0BE0051E5F6 /* AppDelegate.swift in Sources */,
 				6C82D56A28F5D02F0051E5F6 /* MainViewController+CameraPicker.swift in Sources */,
 				6C82D56128F5C7670051E5F6 /* CGImagePropertyOrientation+UIImageOrientation.swift in Sources */,
-				6C82D55928F5C6680051E5F6 /* DriverDistractionVggClassifier.mlmodel in Sources */,
 				6C82D55C28F5C7570051E5F6 /* ImagePredictor.swift in Sources */,
 				6C82D56B28F5D02F0051E5F6 /* MainViewController+PhotoPicker.swift in Sources */,
 				6C82D56028F5C7670051E5F6 /* VNClassificationObservation+confidenceString.swift in Sources */,
 				6C82D56828F5D02F0051E5F6 /* MainViewController.swift in Sources */,
+				6CE55ACE28F6175600541D4D /* DriverDistractionVggClassifier.mlmodel in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
