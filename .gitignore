@@ -27,3 +27,6 @@ xcuserdata/
 input/
 output/
 .ipynb_checkpoints/
+
+## state-farm images
+state-farm-distracted-driver-detection/
