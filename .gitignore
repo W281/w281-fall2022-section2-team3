@@ -32,3 +32,5 @@ output/
 variables/
 *.pb
 *.h5
+## state-farm images
+state-farm-distracted-driver-detection/
