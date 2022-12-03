@@ -27,3 +27,8 @@ xcuserdata/
 input/
 output/
 .ipynb_checkpoints/
+
+*.pyc
+variables/
+*.pb
+*.h5
