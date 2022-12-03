@@ -162,7 +162,7 @@ class FeatureExtractor:
                                     self.pose_config,
                                     sample_type=sample_type,
                                     image_types=image_types,
-                                    transformers=image_transformers,
+                                    transformers=t,
                                     labels=[label])
         dataloader = DataLoader(dataset, num_workers=0, batch_size=1, 
                         shuffle=shuffle, collate_fn=dataset.get_image_from)
@@ -179,7 +179,7 @@ class FeatureExtractor:
               pbar.update(1)
         return stack
 
-    def load_data(self, image_types, shuffle, sample_type, labels=None, count_per_label=None, image_transformers=None):
+    def load_data(self, image_types, shuffle, sample_type, labels=None, count_per_label=None, image_transformers=None, include_feature_vectors=False):
         labels = self.config.class_dict.keys() if labels is None else labels
         dataset = customdataset.MainDataset(self.config, 
                                             self.face_config,
@@ -200,11 +200,25 @@ class FeatureExtractor:
             cur_stack = self.load_data_for_label(label, image_types, shuffle, sample_type, count_per_label=count_per_label, image_transformers=image_transformers, pbar=pbar)
             stack.extend(cur_stack)
 
-        col_names = ['filename', 'label', *[cur_type.name.lower() for cur_type in image_types]]
+        col_names = [enums.DataColumn.FILENAME.value, 
+                     enums.DataColumn.LABEL.value, 
+                     *[cur_type.name.lower() for cur_type in image_types]]
         df = pd.DataFrame(stack, columns=col_names)
+
         if pbar is not None:
             pbar.close()
 
+        if include_feature_vectors:
+            vectors = self.load_feature_vectors(
+                self.config.FEATURE_VECTORS_FOLDER, 
+                df[enums.DataColumn.FILENAME.value],
+                df[enums.DataColumn.LABEL.value])
+            [pixel_features, hog_features, cnn_features, canny_features, pose_features] = vectors
+            df[enums.DataColumn.PIXEL_VECTOR.value] = pixel_features.tolist()
+            df[enums.DataColumn.HOG_VECTOR.value] = hog_features.tolist()
+            df[enums.DataColumn.CNN_VECTOR.value] = cnn_features.tolist()
+            df[enums.DataColumn.CANNY_VECTOR.value] = canny_features.tolist()
+            df[enums.DataColumn.POSE_VECTOR.value] = pose_features.tolist()
         return df
 
 

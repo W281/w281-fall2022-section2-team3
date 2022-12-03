@@ -433,31 +433,31 @@ class PoseExtractor:
             plt.show()
         cv2.imwrite(cropped_pose_file, crop_img)
             
-        def batch_post_processing(labels, pose_config, reduced=False, limit=10):
-            total_images = 0
-            start = time.process_time()
+    # def batch_post_processing(labels, pose_config, reduced=False, limit=10):
+    #     total_images = 0
+    #     start = time.process_time()
 
-            for label in labels:
-                if limit is not None:
-                    if total_images > limit:
-                        break
-                print(f'Processing c{label} files...')
-                dataset = customdataset.DriverDataset(config, reduced=reduced, label=label)
-                dataloader = DataLoader(dataset, num_workers=0, batch_size=1, shuffle=False, collate_fn=dataset.get_image_from)
-                for batch_idx, samples in enumerate(dataloader):
-                    total_images = total_images + 1
-                    # summary = []
-                    if batch_idx % 1000 == 0:
-                        print(f'Processed {label}:{batch_idx} files...')
-                        print(f'Extracted from {total_images} files...')
-                    if limit is not None:
-                        if total_images > limit:
-                            break
-                    _, label, orig_filename = samples
-                    filename = os.path.basename(orig_filename)
-                    file_primary_name, _ = os.path.splitext(os.path.basename(filename))
-                    orig_pose_file = f'{pose_config.FEATURES_FOLDER_FULL}/c{label}/{file_primary_name}_pose.png'
-                    cropped_pose_file = f'{pose_config.FEATURES_FOLDER_FULL}/c{label}/{file_primary_name}_pose_cropped.png'
-                    # Open the file and crop it to just the pose + a border of 5 pixels and then save it.
-                    # Resize it?
-                    self._process_and_save_pose(orig_pose_file, cropped_pose_file)
+    #     for label in labels:
+    #         if limit is not None:
+    #             if total_images > limit:
+    #                 break
+    #         print(f'Processing c{label} files...')
+    #         dataset = customdataset.DriverDataset(config, reduced=reduced, label=label)
+    #         dataloader = DataLoader(dataset, num_workers=0, batch_size=1, shuffle=False, collate_fn=dataset.get_image_from)
+    #         for batch_idx, samples in enumerate(dataloader):
+    #             total_images = total_images + 1
+    #             # summary = []
+    #             if batch_idx % 1000 == 0:
+    #                 print(f'Processed {label}:{batch_idx} files...')
+    #                 print(f'Extracted from {total_images} files...')
+    #             if limit is not None:
+    #                 if total_images > limit:
+    #                     break
+    #             _, label, orig_filename = samples
+    #             filename = os.path.basename(orig_filename)
+    #             file_primary_name, _ = os.path.splitext(os.path.basename(filename))
+    #             orig_pose_file = f'{pose_config.FEATURES_FOLDER_FULL}/c{label}/{file_primary_name}_pose.png'
+    #             cropped_pose_file = f'{pose_config.FEATURES_FOLDER_FULL}/c{label}/{file_primary_name}_pose_cropped.png'
+    #             # Open the file and crop it to just the pose + a border of 5 pixels and then save it.
+    #             # Resize it?
+    #             self._process_and_save_pose(orig_pose_file, cropped_pose_file)

@@ -21,3 +21,25 @@ class SampleType(IntEnum):
     WITH_MORE_THAN_ONE_FACE = 9
     TRAIN_VALIDATION = 10
 
+@unique
+class FeatureType(Enum):
+    PIXEL = 'Pixel'
+    HOG = 'Hog'
+    CNN = 'CNN'
+    CANNY = 'Canny'
+    POSE = 'Pose'
+
+@unique
+class DataColumn(Enum):
+    FILENAME = 'filename'
+    LABEL = 'label'
+    ORIGINAL = 'original'
+    FACE = 'face'
+    FACE_ANNOTATED = 'face_annotated'
+    POSE = 'pose'
+    POSE_ANNOTATED = 'pose_annotated'
+    PIXEL_VECTOR = 'pixel_vector'
+    HOG_VECTOR = 'hog_vector'
+    CNN_VECTOR = 'cnn_vector'
+    CANNY_VECTOR = 'canny_vector'
+    POSE_VECTOR = 'pose_vector'
