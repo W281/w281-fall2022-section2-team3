@@ -43,3 +43,4 @@ class DataColumn(Enum):
     CNN_VECTOR = 'cnn_vector'
     CANNY_VECTOR = 'canny_vector'
     POSE_VECTOR = 'pose_vector'
+    POSE_KEYPOINTS_VECTOR = 'pose_keypoints_vector'

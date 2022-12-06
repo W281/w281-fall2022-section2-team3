@@ -10,6 +10,8 @@ class CustomDataset(Dataset):
     def get_image_from(self, sample):
         return sample[0]
 
+#TODO: All functionality in OriginalDataset is also in MainDataset. So we can remove
+#      OriginalDataset altogether after migrating existing code to MainDataset.
 class OriginalDataset(CustomDataset):
     def __init__(self, config, transform=None, target_transform=None, label=None):
         if not os.path.exists(config.ANNOTATION_FILE):

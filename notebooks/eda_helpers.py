@@ -163,25 +163,21 @@ class PoseExtractor:
             total_sample_count = universe if limit is None else min(universe, limit)
             pbar = None if self.tqdm is None else self.tqdm(total=total_sample_count, position=0, leave=True)
             return pbar
+
         if labels is None:
             labels = self.config.class_dict.keys()
         total_images = 0
-        
-        # labels = [0, # Safe Driving
-        #           1, # Texting (right)
-        #           2, # Phone Call (right)
-        #           9] # Conversing
+
         pbar = get_pbar()
         for label in labels:
             if limit is not None and total_images > limit:
                     break
             dataset = customdataset.MainDataset(self.config, self.face_config, self.pose_config,
-                                                label=label, should_load_images=False,
+                                                labels=[label], should_load_images=False,
                                                 sample_type=enums.SampleType.TRAIN_TEST_VALIDATION)
             dataloader = DataLoader(dataset, num_workers=0, batch_size=1, shuffle=False, collate_fn=dataset.get_image_from)
             for batch_idx, samples in enumerate(dataloader):
-                # summary = []
-                if batch_idx > 0 and batch_idx % 2 == 0:
+                if batch_idx > 0 and batch_idx % 100 == 0:
                     if pbar is None:
                         print(f'Processed {label}:{batch_idx} files...')
                         print(f'Extracted from {total_images} files...')

@@ -6,6 +6,7 @@ class PoseConfig:
         # self.input_size = 192 # if model is movenet_lightning
         self.INPUT_SIZE = 256 # if model is movenet_thunder
         self.MIN_CROP_KEYPOINT_SCORE = 0.2
+        self.KEYPOINT_THRESHOLD = 0.11
         self.KEYPOINT_DICT = {
             'nose': 0,
             'left_eye': 1,
@@ -25,6 +26,12 @@ class PoseConfig:
             'left_ankle': 15,
             'right_ankle': 16
         }
+        self.KEYPOINT_IDX_NAME = {v: k for k, v in self.KEYPOINT_DICT.items()}
+        self.SORTED_KEYPOINT_NAMES = [k for k, v in sorted(self.KEYPOINT_DICT.items(), key=lambda item: item[1])]
+        self.BASE_KEYPOINT = 0
+        self.KEYPOINTS_INCLUDED_IN_FEATURES = set(range(1, 13)) # The feature vector is based on all keypoints
+                                                                # except nose, left_knee, right_knee,
+                                                                # left_ankle and right_ankle
         # Maps bones to a matplotlib color name.
         self.KEYPOINT_EDGE_INDS_TO_COLOR = {
             (0, 1): 'm',
