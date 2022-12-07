@@ -4,18 +4,18 @@ import numpy as np
 import os
 
 def check_torch_mps_device():
-  if torch.backends.mps.is_available():
-      mps_device = torch.device("mps")
-      x = torch.ones(1, device=mps_device)
-      print (x)
-  else:
-      print ("MPS device not found.")
+    if torch.backends.mps.is_available():
+        mps_device = torch.device("mps")
+        x = torch.ones(1, device=mps_device)
+        print (x)
+    else:
+        print ("MPS device not found.")
 
 def make_torch_deterministic(seed):
-  torch.manual_seed(seed)
-  random.seed(seed)
-  np.random.seed(seed)
-  torch.use_deterministic_algorithms(True)
+    torch.manual_seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.use_deterministic_algorithms(True)
 
 
 def create_output_folders(config, mtcnn_config):

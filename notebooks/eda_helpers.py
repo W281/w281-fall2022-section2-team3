@@ -19,66 +19,66 @@ import torch
 
 
 class FaceExtractor:
-  def __init__(self, config, tqdm=None):
-    self.config = config
-    self.tqdm = tqdm
+    def __init__(self, config, tqdm=None):
+        self.config = config
+        self.tqdm = tqdm
 
-  def extract_faces(self, output_base, summary_file_name, annotation_file, limit=None):
-      # mtcnn = MTCNN(keep_all=False, selection_method='center_weighted_size', select_largest=True)
-      mtcnn = MTCNN(keep_all=False, select_largest=True)
-      transform = transforms.Compose([transforms.ToTensor(), T.ToPILImage()])
-      dataset = customdataset.OriginalDataset(self.config, transform=transform)
-      dataloader = DataLoader(dataset, num_workers=0, batch_size=1, shuffle=True, collate_fn=dataset.get_image_from)
+    def extract_faces(self, output_base, summary_file_name, annotation_file, limit=None):
+        # mtcnn = MTCNN(keep_all=False, selection_method='center_weighted_size', select_largest=True)
+        mtcnn = MTCNN(keep_all=False, select_largest=True)
+        transform = transforms.Compose([transforms.ToTensor(), T.ToPILImage()])
+        dataset = customdataset.OriginalDataset(self.config, transform=transform)
+        dataloader = DataLoader(dataset, num_workers=0, batch_size=1, shuffle=True, collate_fn=dataset.get_image_from)
 
-      summary_cols = ['filename', 'class', 'num_faces', 'boxes', 'points', 'probs']
-      summary = []
-      annotation = []
-      files_to_process = limit if limit is not None else len(dataloader)
-      pbar = None if self.tqdm is None else self.tqdm(total=files_to_process, position=0, leave=True, unit='files')
-      for batch_idx, samples in enumerate(dataloader):
-          # if batch_idx % 1000 == 0:
-          #     print(f'Processed {batch_idx} files...')
-          if limit is not None and batch_idx > limit:
+        summary_cols = ['filename', 'class', 'num_faces', 'boxes', 'points', 'probs']
+        summary = []
+        annotation = []
+        files_to_process = limit if limit is not None else len(dataloader)
+        pbar = None if self.tqdm is None else self.tqdm(total=files_to_process, position=0, leave=True, unit='files')
+        for batch_idx, samples in enumerate(dataloader):
+            # if batch_idx % 1000 == 0:
+            #     print(f'Processed {batch_idx} files...')
+            if limit is not None and batch_idx > limit:
                   break
-          img, label, filename = samples
-          if pbar is not None:
-              pbar.set_description('Processing {:<14}'.format(filename))
-              pbar.update(1)
+            img, label, filename = samples
+            if pbar is not None:
+                pbar.set_description('Processing {:<14}'.format(filename))
+                pbar.update(1)
 
-          filename = os.path.basename(filename)
-          file_primary_name, _ = os.path.splitext(filename)
+            filename = os.path.basename(filename)
+            file_primary_name, _ = os.path.splitext(filename)
 
-          # Get bounding boxes as well as facial keypoints from model
-          boxes, probs, points = mtcnn.detect(img, landmarks=True)
+            # Get bounding boxes as well as facial keypoints from model
+            boxes, probs, points = mtcnn.detect(img, landmarks=True)
 
-          # Annotate image with bounding boxes + keypoints
-          img_draw = img.copy()
-          draw = ImageDraw.Draw(img_draw)
-          Path(f'{output_base}/c{label}').mkdir(parents=True, exist_ok=True)
-          if points is not None and boxes is not None:
-              for i, (box, point) in enumerate(zip(boxes, points)):
-                  draw.rectangle(box.tolist(), width=1)
-                  for p in point:
-                      draw.ellipse((p - 2).tolist() + (p + 2).tolist(), fill='red')
-                  # Save the extracted face as another file
-                  extract_face(img, box, save_path=f'{output_base}/c{label}/{file_primary_name}_{i}.png')
+            # Annotate image with bounding boxes + keypoints
+            img_draw = img.copy()
+            draw = ImageDraw.Draw(img_draw)
+            Path(f'{output_base}/c{label}').mkdir(parents=True, exist_ok=True)
+            if points is not None and boxes is not None:
+                for i, (box, point) in enumerate(zip(boxes, points)):
+                    draw.rectangle(box.tolist(), width=1)
+                    for p in point:
+                        draw.ellipse((p - 2).tolist() + (p + 2).tolist(), fill='red')
+                    # Save the extracted face as another file
+                    extract_face(img, box, save_path=f'{output_base}/c{label}/{file_primary_name}_{i}.png')
 
-          # save a copy of the annotated image.
-          img_draw.save(f'{output_base}/c{label}/{file_primary_name}_annotated.png')
+            # save a copy of the annotated image.
+            img_draw.save(f'{output_base}/c{label}/{file_primary_name}_annotated.png')
 
-          # Save summary of the file.
-          summary.append([filename, label, len(boxes) if boxes is not None else 0, boxes, points, probs])
-          annotation.append([filename, label, len(boxes) if boxes is not None else 0, enums.SampleType.IGNORED])
+            # Save summary of the file.
+            summary.append([filename, label, len(boxes) if boxes is not None else 0, boxes, points, probs])
+            annotation.append([filename, label, len(boxes) if boxes is not None else 0, enums.SampleType.IGNORED])
 
-      # Summarize the run.
-      df_summary = pd.DataFrame(summary, columns=summary_cols)
-      df_summary.to_csv(f'{output_base}/{summary_file_name}', index=False)
+        # Summarize the run.
+        df_summary = pd.DataFrame(summary, columns=summary_cols)
+        df_summary.to_csv(f'{output_base}/{summary_file_name}', index=False)
 
-      df_annotation = pd.DataFrame(annotation, columns=self.config.ANNOTATION_FILE_COLS)
-      df_annotation.to_csv(annotation_file, index=False)
-      if pbar is not None:
-          pbar.close()
-      return df_summary
+        df_annotation = pd.DataFrame(annotation, columns=self.config.ANNOTATION_FILE_COLS)
+        df_annotation.to_csv(annotation_file, index=False)
+        if pbar is not None:
+            pbar.close()
+        return df_summary
 
 class SampleSplitter:
     def __init__(self, config, face_config, pose_config, tqdm):
@@ -105,7 +105,7 @@ class SampleSplitter:
             #      transformers=None, label=None, should_load_images=True
             dataset = customdataset.MainDataset(self.config, self.face_config, self.pose_config,
                                                 sample_type=enums.SampleType.WITH_JUST_ONE_FACE,
-                                                label=label, should_load_images=False)
+                                                labels=label, should_load_images=False)
             # Random shuffling is important
             dataloader = DataLoader(dataset, num_workers=0, batch_size=1,
                                     shuffle=True, collate_fn=dataset.get_image_from)
@@ -135,7 +135,7 @@ class SampleSplitter:
             if filename in samples:
                 [_, cur_sample_type] = samples[filename]
             else:
-              cur_sample_type = enums.SampleType.IGNORED
+                cur_sample_type = enums.SampleType.IGNORED
             pd_orig_data.at[i, 'sample_type'] = cur_sample_type
         print(f"Created {pd_orig_data[pd_orig_data['sample_type'] == 1].shape[0]} training samples")
         print(f"Created {pd_orig_data[pd_orig_data['sample_type'] == 2].shape[0]} validation samples")
@@ -176,7 +176,7 @@ class PoseExtractor:
             if limit is not None and total_images > limit:
                     break
             dataset = customdataset.MainDataset(self.config, self.face_config, self.pose_config,
-                                                label=label, should_load_images=False,
+                                                labels=label, should_load_images=False,
                                                 sample_type=enums.SampleType.TRAIN_TEST_VALIDATION)
             dataloader = DataLoader(dataset, num_workers=0, batch_size=1, shuffle=False, collate_fn=dataset.get_image_from)
             for batch_idx, samples in enumerate(dataloader):

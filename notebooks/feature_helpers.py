@@ -176,7 +176,7 @@ class FeatureExtractor:
                 row.append(cur_image_map[cur_type])
             stack.append(row)
             if pbar is not None:
-              pbar.update(1)
+                pbar.update(1)
         return stack
 
     def load_data(self, image_types, shuffle, sample_type, labels=None, count_per_label=None, image_transformers=None, include_feature_vectors=False):
