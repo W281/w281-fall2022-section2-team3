@@ -13,6 +13,8 @@ import transformers
 import customdataset
 from torch.utils.data import DataLoader
 import pandas as pd
+from tf_bodypix.api import load_model, download_model, BodyPixModelPaths
+import math
 
 
 class FeatureExtractor:
@@ -92,6 +94,65 @@ class FeatureExtractor:
             xpca_list.append(X_pca)
         return pca_list, xpca_list
 
+    #Arms' location and anle with BodyPix:
+    def get_body_part_features(self, base_folder, labels, image_files):
+        # Part of body that needs to be segmented out
+        parts_of_interest = [
+            'left_lower_arm_back',  # (255, 115, 75)
+            'right_lower_arm_front',  # (255, 140, 56)
+        ]
+        out_feat = []
+        bp_model = load_model(download_model(BodyPixModelPaths.RESNET50_FLOAT_STRIDE_16))
+        enumerator = enumerate(images) if self.tqdm is None else self.tqdm(enumerate(image_files), unit='images', desc='Building Body-Part Features', total=len(image_files))
+        for i, image_file in enumerator:
+            img = cv.imread(f'{base_folder}/c{labels[i]}/{image_file}')
+            prediction = bp_model.predict_single(img)
+            mask = prediction.get_mask(threshold=0.5).numpy().astype(np.uint8)
+            colored_mask = prediction.get_colored_part_mask(mask, part_names=parts_of_interest)
+            body_parts = [
+                ['left_lower_arm_back', (255, 115, 75)],
+                ['right_lower_arm_front', (255, 140, 56)]
+            ]
+            channel_1 = colored_mask[:, :, 1]
+            this_bp_features = list()
+            for this_part in body_parts:
+                channel_color_code = this_part[1][1]
+                this_coord = np.argwhere(channel_1 == channel_color_code)
+                # Check if this body part was detected
+                if len(this_coord) > 0:
+                    x_coord, y_coord = this_coord[:, 1], -this_coord[:, 0]
+                    # Estimate center
+                    center_x, center_y = np.mean(x_coord), np.mean(y_coord)
+                    # Estimate orientation
+                    z = np.polyfit(x_coord, y_coord, 1)
+                    orientation_in_rad = np.arctan(z[0])
+                    this_bp_features += [center_x, center_y, orientation_in_rad]
+                else:
+                    this_bp_features += [None, None, None]
+            out_feat.append(this_bp_features)
+        # Might have to use vstack or hstack depending on how features are indexed for later use
+        return np.vstack(out_feat)
+
+    def detect_eyes(self, base_folder, labels, image_files, count=None):
+        # create a list to store number of eyes detected
+        n_eyes_detected = []
+        enumerator = enumerate(image_files) if self.tqdm is None else self.tqdm(enumerate(image_files), unit='images', desc=f'Getting eye counts', total=len(image_files))
+        for i, image_file in enumerator:
+            if count is not None and i > count:
+                break
+            # turn the image to gray image
+            # print(f'Opening {base_folder}/c{labels[i]}/{image_file}')
+            image = cv.imread(f'{base_folder}/c{labels[i]}/{image_file}')
+            gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+
+            eye_cascade = cv.CascadeClassifier(self.face_config.EYE_HAAR_CASCADES)
+            eyes = eye_cascade.detectMultiScale(gray, scaleFactor = 1.3, minNeighbors = 5)
+
+            # save the number of eyes detcted
+            n_eyes_detected.append(len(eyes))
+
+        return n_eyes_detected
+
     def get_tsne(self, X_list, n_components=2, perplexity=50):
         xtsne_list = []
         enumerator = X_list if self.tqdm is None else self.tqdm(X_list, unit='images', desc=f'Doing tSNE({n_components})')
@@ -127,11 +188,17 @@ class FeatureExtractor:
         pose_features = []
         keypoints_features = []
         body_parts_features = []
+        right_hand_angles = []
+        left_hand_angles = []
         for i, filename in enumerator:
             cur_label = labels[i]
             cur_folder = f'{output_base}/c{cur_label}'
-            [cur_pixels, cur_hogs, cur_cnn, cur_canny, cur_pose] = torch.load(f'{cur_folder}/{filename}.pt')
-            _, keypoints_feature = self._load_keypoints(cur_label, filename)
+            [cur_pixels, cur_hogs, cur_cnn, cur_canny, cur_pose, cur_body_parts] = torch.load(f'{cur_folder}/{filename}.pt')
+            _, keypoints_feature, (rh_angle, lh_angle) = self._keypoint_offsets_for(cur_label, filename)
+            right_hand_angles.append(rh_angle)
+            left_hand_angles.append(lh_angle)
+            keypoints_feature.append(rh_angle/360)
+            keypoints_feature.append(lh_angle/360)
             keypoints_features.append(keypoints_feature)
             pixel_features.append(cur_pixels)
             hog_features.append(cur_hogs)
@@ -145,7 +212,9 @@ class FeatureExtractor:
                 np.array(canny_features),
                 np.array(pose_features),
                 np.array(keypoints_features),
-                np.array(body_parts_features)]
+                np.array(body_parts_features),
+                np.array(right_hand_angles),
+                np.array(left_hand_angles)]
 
     def load_data_for_label(self, label, image_types, shuffle, sample_type, count_per_label=None, image_transformers=None, pbar=None):
         default_t = {
@@ -215,24 +284,44 @@ class FeatureExtractor:
         if pbar is not None:
             pbar.close()
 
-        if include_feature_vectors:
-            vectors = self.load_feature_vectors(
-                self.config.FEATURE_VECTORS_FOLDER, 
-                df[enums.DataColumn.FILENAME.value],
-                df[enums.DataColumn.LABEL.value])
-            [pixel_features, hog_features, cnn_features, canny_features, pose_features] = vectors
-            enums.DataColumn.POSE_KEYPOINTS_VECTOR.value
-            if ignore_large_features:
-                df[enums.DataColumn.HOG_VECTOR.value] = hog_features.tolist()
-            else:
-                df[enums.DataColumn.PIXEL_VECTOR.value] = pixel_features.tolist()
-                df[enums.DataColumn.HOG_VECTOR.value] = hog_features.tolist()
-                df[enums.DataColumn.CNN_VECTOR.value] = cnn_features.tolist()
-                df[enums.DataColumn.CANNY_VECTOR.value] = canny_features.tolist()
-                df[enums.DataColumn.POSE_VECTOR.value] = pose_features.tolist()
+        # if include_feature_vectors:
+        #     vectors = self.load_feature_vectors(
+        #         self.config.FEATURE_VECTORS_FOLDER, 
+        #         df[enums.DataColumn.FILENAME.value],
+        #         df[enums.DataColumn.LABEL.value])
+        #     [pixel_features, hog_features, cnn_features, canny_features, pose_features, keypoints_features, body_parts_features] = vectors
+        #     enums.DataColumn.POSE_KEYPOINTS_VECTOR.value
+        #     if ignore_large_features:
+        #         df[enums.DataColumn.HOG_VECTOR.value] = hog_features.tolist()
+        #         df[enums.DataColumn.POSE_KEYPOINTS_VECTOR.value] = keypoints_features.tolist()
+        #     else:
+        #         df[enums.DataColumn.PIXEL_VECTOR.value] = pixel_features.tolist()
+        #         df[enums.DataColumn.HOG_VECTOR.value] = hog_features.tolist()
+        #         df[enums.DataColumn.CNN_VECTOR.value] = cnn_features.tolist()
+        #         df[enums.DataColumn.CANNY_VECTOR.value] = canny_features.tolist()
+        #         df[enums.DataColumn.POSE_VECTOR.value] = pose_features.tolist()
+        #         df[enums.DataColumn.POSE_KEYPOINTS_VECTOR.value] = keypoints_features.tolist()
+        #         df[enums.DataColumn.BODY_PARTS__VECTOR.value] = body_parts_features.tolist()
         return df
 
-    def _load_keypoints(self, label, filename, verbose=False):
+    def _get_hand_angles(self, keypoints):
+        def _getAnglePy(shoulder_x, shoulder_y, elbow_x, elbow_y, wrist_x, wrist_y):
+            ang = math.degrees(math.atan2(wrist_y-elbow_y, wrist_x-elbow_x) - math.atan2(shoulder_y-elbow_y, shoulder_x-elbow_x))
+            ang = ang + 360 if ang < 0 else ang
+            return ang
+
+        right_shoulder = keypoints[self.pose_config.KEYPOINT_DICT['right_shoulder']]
+        right_elbow = keypoints[self.pose_config.KEYPOINT_DICT['right_elbow']]
+        right_wrist = keypoints[self.pose_config.KEYPOINT_DICT['right_wrist']]
+        rh_ang = _getAnglePy(right_shoulder[0], right_shoulder[1], right_elbow[0], right_elbow[1], right_wrist[0], right_wrist[1])
+
+        left_shoulder = keypoints[self.pose_config.KEYPOINT_DICT['left_shoulder']]
+        left_elbow = keypoints[self.pose_config.KEYPOINT_DICT['left_elbow']]
+        left_wrist = keypoints[self.pose_config.KEYPOINT_DICT['left_wrist']]
+        lh_ang = _getAnglePy(left_shoulder[0], left_shoulder[1], left_elbow[0], left_elbow[1], left_wrist[0], left_wrist[1])
+        return (rh_ang, lh_ang)
+
+    def _keypoint_offsets_for(self, label, filename, verbose=False):
         poses_folder = f'{self.pose_config.FEATURES_FOLDER}/c{label}'
         keypoints_file_path = f'{poses_folder}/{filename.replace(".jpg", "_keypoints.pt")}'
         
@@ -251,7 +340,9 @@ class FeatureExtractor:
 
         # Add the nose keypoint first. Offsets are zero for nose.
         final_keypoints = [[nose_x, nose_y, nose_score, 0, 0]]
+        (rh_angle, lh_angle) = self._get_hand_angles(keypoints)
 
+        keypoints[self.pose_config.KEYPOINT_DICT['nose']]
         # Iterate through remaining keypoints, skipping nose.
         for i in range(1, len(self.pose_config.KEYPOINT_DICT)):
             cur_keypoint = keypoints[i] # has 3 values - x, y , score
@@ -263,7 +354,7 @@ class FeatureExtractor:
                 feature_vector.extend([new_keypoints[3], new_keypoints[4]])
         if verbose:
             print(f'{filename} keypoints: {final_keypoints}')
-        return final_keypoints, feature_vector
+        return final_keypoints, feature_vector, (rh_angle, lh_angle)
         
     def keypoints_relative_to_nose(self, sample_type=enums.SampleType.TRAIN_TEST_VALIDATION):
         dataset = customdataset.MainDataset(self.config, self.face_config, self.pose_config,
@@ -272,12 +363,10 @@ class FeatureExtractor:
         dataloader = DataLoader(dataset, num_workers=0, batch_size=1,
                                 shuffle=True, collate_fn=dataset.get_image_from)
         rows = []
-        point_x = []
-        point_y = []
         enumerator = enumerate(dataloader) if self.tqdm is None else self.tqdm(enumerate(dataloader), total=len(dataset))
         for i, (_, label, filename) in enumerator:
             # Load the keypoints file
-            keypoints, feature_vector = self._load_keypoints(label, filename)
+            keypoints, feature_vector, _ = self._keypoint_offsets_for(label, filename)
             row = [filename, label, feature_vector]
             row.extend([keypoint[0] for keypoint in keypoints])
             row.extend([keypoint[1] for keypoint in keypoints])
@@ -292,6 +381,56 @@ class FeatureExtractor:
         col_names.extend([f'{name}_score' for name in self.pose_config.SORTED_KEYPOINT_NAMES])
         col_names.extend([f'{name}_offset_x' for name in self.pose_config.SORTED_KEYPOINT_NAMES])
         col_names.extend([f'{name}_offset_y' for name in self.pose_config.SORTED_KEYPOINT_NAMES])
+                                     
+        df = pd.DataFrame(rows, columns=col_names)
+        return df
+
+    def _keypoints_for(self, label, filename):
+        poses_folder = f'{self.pose_config.FEATURES_FOLDER}/c{label}'
+        keypoints_file_path = f'{poses_folder}/{filename.replace(".jpg", "_keypoints.pt")}'
+        
+        keypoints = torch.load(keypoints_file_path) # A numpy array with shape [1, 1, 17, 3] 
+                                                    # representing the keypoint coordinates and scores
+                                                    # returned from the MoveNet model.
+        # Apply threshold filter and convert to a map with needed keypoints
+        if not keypoints.shape[0] == 1:
+            raise ValueError('{filename} has {keypoints.shape[0]} poses. Should have just one pose.')
+        
+        # Ignore the first two dimensions
+        keypoints = keypoints[0][0]
+
+        # Add the nose keypoint first. Offsets are zero for nose.
+        final_keypoints = []
+
+        # Iterate through remaining keypoints, skipping nose.
+        for i in range(0, len(self.pose_config.KEYPOINT_DICT)):
+            cur_keypoint = keypoints[i] # has 3 values - x, y , score
+            new_keypoints = [cur_keypoint[0], cur_keypoint[1], cur_keypoint[2]]
+            final_keypoints.append(new_keypoints)
+        return final_keypoints
+
+    def load_keypoints(self, sample_type=enums.SampleType.TRAIN_TEST_VALIDATION, count=None):
+        dataset = customdataset.MainDataset(self.config, self.face_config, self.pose_config,
+                                            sample_type=sample_type, should_load_images=False)
+
+        dataloader = DataLoader(dataset, num_workers=0, batch_size=1,
+                                shuffle=True, collate_fn=dataset.get_image_from)
+        rows = []
+        enumerator = enumerate(dataloader) if self.tqdm is None else self.tqdm(enumerate(dataloader), total=len(dataset))
+        for i, (_, label, filename) in enumerator:
+            if count is not None and i > count:
+                break
+            file_keypoints = self._keypoints_for(label, filename)
+            row = [filename, label]
+            row.extend([keypoint[0] for keypoint in file_keypoints])
+            row.extend([keypoint[1] for keypoint in file_keypoints])
+            row.extend([keypoint[2] for keypoint in file_keypoints])
+            rows.append(row)
+
+        col_names = [enums.DataColumn.FILENAME.value, enums.DataColumn.LABEL.value]
+        col_names.extend([f'{name}_x' for name in self.pose_config.SORTED_KEYPOINT_NAMES])
+        col_names.extend([f'{name}_y' for name in self.pose_config.SORTED_KEYPOINT_NAMES])
+        col_names.extend([f'{name}_score' for name in self.pose_config.SORTED_KEYPOINT_NAMES])
                                      
         df = pd.DataFrame(rows, columns=col_names)
         return df

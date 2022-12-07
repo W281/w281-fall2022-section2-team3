@@ -59,6 +59,7 @@ class FaceConfig:
         self.FEATURES_FOLDER = f'{config.OUTPUT_FOLDER}/faces'
         self.FACE_SUMMARY_NAME = 'face_extraction_summary.csv'
         self.FACE_SUMMARY_FILEPATH = f'{self.FEATURES_FOLDER}/{self.FACE_SUMMARY_NAME}'
+        self.EYE_HAAR_CASCADES = f'{config.INPUT_FOLDER}/haarcascade_eye.xml'
 
 class Configuration:
     def __init__(self):
