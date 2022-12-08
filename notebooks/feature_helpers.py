@@ -279,7 +279,6 @@ class FeatureExtractor:
                      enums.DataColumn.LABEL.value, 
                      *[cur_type.name.lower() for cur_type in image_types]]
         df = pd.DataFrame(stack, columns=col_names)
-        print(f'load_data::df cols:{df.columns}')
 
         if pbar is not None:
             pbar.close()

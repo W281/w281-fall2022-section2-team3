@@ -76,8 +76,8 @@ class Configuration:
         self.SEED = 42
         
         self.class_dict = {0 : "Safe Driving",
-                           1 : "Texting (right)",
-                           2 : "Phone Call (right)",
+                           1 : "Texting(right)",
+                           2 : "Phone Call(right)",
                            3 : "Texting(left)",
                            4 : "Phone Call(left)",
                            5 : "Fiddling With Console",
