@@ -28,6 +28,8 @@ class FeatureType(Enum):
     CNN = 'CNN'
     CANNY = 'Canny'
     POSE = 'Pose'
+    KEYPOINTS = 'Keypoints'
+    BODY_PARTS = 'Bodyparts'
 
 @unique
 class DataColumn(Enum):
@@ -45,3 +47,8 @@ class DataColumn(Enum):
     POSE_VECTOR = 'pose_vector'
     POSE_KEYPOINTS_VECTOR = 'pose_keypoints_vector'
     BODY_PARTS__VECTOR = 'body_parts_vector'
+
+@unique
+class DataScalers(Enum):
+    POSE_KEYPOINTS_VECTOR_SCALER = 'scaler_pose_keypoints_vector.pkl',
+    POSE_KEYPOINTS_VECTOR_PCA_SCALER = 'scaler_pose_keypoints_vector_pca_14.pkl'

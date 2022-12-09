@@ -31,11 +31,12 @@ class LogisticRegression(nn.Module):
          return outputs
     
 # Optimizer definition
-def optimize(opt_dict, best_dict, X_train, y_train, max_evals = 50, scoring_fn = 'neg_log_loss' random_state = config.SEED):
+def optimize(opt_dict, best_dict, X_train, y_train, max_evals = 50, scoring_fn = 'neg_log_loss'):
     """
         Runs hyperopt for all the models in opt_dict. Adds the best hyperparameter set for each model.
         Returns dictionary of best hyperparameter set.
     """
+    random_state = config.SEED
     # Define TPE algorithm for all optimizers
     tpe_algo = tpe.suggest
 

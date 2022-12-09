@@ -74,7 +74,7 @@ class Configuration:
         self.FEATURE_VECTORS_FOLDER = f'{self.TRAIN_DATA}/feature_vectors'
         self.IMAGES_BASE = self.TRAIN_DATA
         self.SEED = 42
-        
+        self.SAVED_MODELS_FOLDER = f'{self.OUTPUT_FOLDER}/saved_models'
         self.class_dict = {0 : "Safe Driving",
                            1 : "Texting(right)",
                            2 : "Phone Call(right)",

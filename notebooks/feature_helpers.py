@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 import pandas as pd
 from tf_bodypix.api import load_model, download_model, BodyPixModelPaths
 import math
+import copy
 
 
 class FeatureExtractor:
@@ -82,13 +83,13 @@ class FeatureExtractor:
         return np.stack(out_feat, axis=0)
 
 
-    def get_PCA(self, X_list, n_components=2):
+    def get_PCA(self, X_list, n_components):
         pca_list = []
         xpca_list = []
-        enumerator = X_list if self.tqdm is None else self.tqdm(X_list, unit='images', desc=f'Doing PCA({n_components})')
 
-        for X in enumerator:
-            pca = PCA(n_components=n_components, svd_solver="randomized", whiten=True).fit(X)
+        enumerator = enumerate(X_list) if self.tqdm is None else self.tqdm(enumerate(X_list), unit='images', desc=f'Doing PCA({n_components})', total=len(X_list))
+        for i, X in enumerator:
+            pca = PCA(n_components=n_components[i], svd_solver="randomized", whiten=True).fit(X)
             X_pca = pca.transform(X)
             pca_list.append(pca)
             xpca_list.append(X_pca)
@@ -177,8 +178,11 @@ class FeatureExtractor:
             cur_features = [pixel_features[i], hog_features[i], cnn_features[i], canny_features[i], pose_features[i], body_parts_features[i]]
             torch.save(cur_features, f'{cur_folder}/{filename}.pt')
 
-    def load_feature_vectors(self, output_base, filenames, labels):
+    def load_feature_vectors(self, output_base, filenames, labels, features=None):
         enumerator = enumerate(filenames)
+        if features is None:
+            features = set(list(enums.FeatureType))
+
         if self.tqdm is not None:
             enumerator = self.tqdm(enumerator, unit='images', desc=f'Loading feature vectors', total=len(filenames))
         pixel_features = []
@@ -206,15 +210,27 @@ class FeatureExtractor:
             canny_features.append(cur_canny)
             pose_features.append(cur_pose)
             body_parts_features.append(cur_body_parts)
-        return [np.array(pixel_features), 
-                np.array(hog_features),
-                np.array(cnn_features),
-                np.array(canny_features),
-                np.array(pose_features),
-                np.array(keypoints_features),
-                np.array(body_parts_features),
-                np.array(right_hand_angles),
-                np.array(left_hand_angles)]
+
+
+        list_of_features = []
+        if enums.FeatureType.PIXEL in features:
+            list_of_features.append(np.array(pixel_features))
+        if enums.FeatureType.HOG in features:
+            list_of_features.append(np.array(hog_features))
+        if enums.FeatureType.CNN in features:
+            list_of_features.append(np.array(cnn_features))
+        if enums.FeatureType.CANNY in features:
+            list_of_features.append(np.array(canny_features))
+        if enums.FeatureType.POSE in features:
+            list_of_features.append(np.array(pose_features))
+        if enums.FeatureType.KEYPOINTS in features:
+            list_of_features.append(np.array(keypoints_features))
+        if enums.FeatureType.BODY_PARTS in features:
+            list_of_features.append(np.array(body_parts_features))
+        list_of_features.append(np.array(right_hand_angles))
+        list_of_features.append(np.array(left_hand_angles))
+
+        return list_of_features
 
     def load_data_for_label(self, label, image_types, shuffle, sample_type, count_per_label=None, image_transformers=None, pbar=None):
         default_t = {
@@ -245,10 +261,11 @@ class FeatureExtractor:
         for batch_idx, samples in enumerate(dataloader):
             if count_per_label is not None and batch_idx >= count_per_label:
                 break
-            cur_image_map, cur_label, cur_filename = samples
+            cur_image_map, cur_label, cur_filename = copy.deepcopy(samples)
             row = [cur_filename, cur_label]
-            for cur_type in image_types:
-                row.append(cur_image_map[cur_type])
+            if image_types is not None:
+                for cur_type in image_types:
+                    row.append(cur_image_map[cur_type])
             if pbar is not None:
               pbar.update(1)
             stack.append(row)
@@ -276,8 +293,10 @@ class FeatureExtractor:
             stack.extend(cur_stack)
 
         col_names = [enums.DataColumn.FILENAME.value, 
-                     enums.DataColumn.LABEL.value, 
-                     *[cur_type.name.lower() for cur_type in image_types]]
+                     enums.DataColumn.LABEL.value]
+        if image_types is not None:
+            col_names.extend([cur_type.name.lower() for cur_type in image_types])
+
         df = pd.DataFrame(stack, columns=col_names)
 
         if pbar is not None:
@@ -363,7 +382,8 @@ class FeatureExtractor:
                                 shuffle=True, collate_fn=dataset.get_image_from)
         rows = []
         enumerator = enumerate(dataloader) if self.tqdm is None else self.tqdm(enumerate(dataloader), total=len(dataset))
-        for i, (_, label, filename) in enumerator:
+        for i, sample in enumerator:
+            (_, label, filename) = copy.deepcopy(sample)
             # Load the keypoints file
             keypoints, feature_vector, _ = self._keypoint_offsets_for(label, filename)
             row = [filename, label, feature_vector]
@@ -416,7 +436,8 @@ class FeatureExtractor:
                                 shuffle=True, collate_fn=dataset.get_image_from)
         rows = []
         enumerator = enumerate(dataloader) if self.tqdm is None else self.tqdm(enumerate(dataloader), total=len(dataset))
-        for i, (_, label, filename) in enumerator:
+        for i, sample in enumerator:
+            (_, label, filename) = copy.deepcopy(sample)
             if count is not None and i > count:
                 break
             file_keypoints = self._keypoints_for(label, filename)
