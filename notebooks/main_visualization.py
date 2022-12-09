@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import cv2
 
-
 # Feature dataframe
 csv_file_name = 'body_parts_feat.csv'
 df = pd.read_csv(csv_file_name)
