@@ -4,6 +4,7 @@ import configuration
 from hyperopt import STATUS_OK,rand, tpe, Trials, fmin, hp
 from hyperopt.early_stop import no_progress_loss
 from torch import nn
+from sklearn.model_selection import cross_val_score
 
 # Pull config
 config = configuration.Configuration()
@@ -53,10 +54,10 @@ def optimize(opt_dict, best_dict, X_train, y_train, max_evals = 50, scoring_fn =
         ## objective function definition
         def f(params):
             loss = None
-            try:
-                m = model(random_state = random_state, **params)
-                loss = -cross_val_score(m, X_train, y_train, scoring = scoring_fn).mean()
-            except: AttributeError
+            # try:
+            m = model(random_state = random_state, **params)
+            loss = -cross_val_score(m, X_train, y_train, scoring = scoring_fn).mean()
+            # except: AttributeError
 
             return {'loss': loss, 'status': STATUS_OK}
 
