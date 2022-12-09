@@ -1,8 +1,12 @@
 import torchvision.models as models
+import configuration
 
 from hyperopt import STATUS_OK,rand, tpe, Trials, fmin, hp
 from hyperopt.early_stop import no_progress_loss
 from torch import nn
+
+# Pull config
+config = configuration.Configuration()
 
 class ResNet152(nn.Module):
     def __init__(self, progress=True):
@@ -31,12 +35,11 @@ class LogisticRegression(nn.Module):
          return outputs
     
 # Optimizer definition
-def optimize(opt_dict, best_dict, X_train, y_train, max_evals = 50, scoring_fn = 'neg_log_loss'):
+def optimize(opt_dict, best_dict, X_train, y_train, max_evals = 50, scoring_fn = 'neg_log_loss', random_state = config.SEED):
     """
         Runs hyperopt for all the models in opt_dict. Adds the best hyperparameter set for each model.
         Returns dictionary of best hyperparameter set.
     """
-    random_state = config.SEED
     # Define TPE algorithm for all optimizers
     tpe_algo = tpe.suggest
 
