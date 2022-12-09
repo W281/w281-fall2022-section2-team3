@@ -85,6 +85,7 @@ class FeatureExtractor:
     def get_PCA(self, X_list, n_components=2):
         pca_list = []
         xpca_list = []
+        pca_pk_list = []
         enumerator = X_list if self.tqdm is None else self.tqdm(X_list, unit='images', desc=f'Doing PCA({n_components})')
 
         for X in enumerator:
@@ -165,7 +166,7 @@ class FeatureExtractor:
         return xtsne_list
 
     def save_feature_vectors(self, output_base, filenames, labels, vectors):
-        [pixel_features, hog_features, cnn_features, canny_features, pose_features, body_parts_features] = vectors
+        [pixel_features, hog_features, cnn_features, canny_features, pose_features] = vectors
         enumerator = enumerate(filenames)
         if self.tqdm is not None:
             enumerator = self.tqdm(enumerator, unit='images', desc=f'Saving feature vectors', total=len(filenames))
@@ -174,7 +175,7 @@ class FeatureExtractor:
             cur_label = labels[i]
             cur_folder = f'{output_base}/c{cur_label}'
             Path(cur_folder).mkdir(parents=True, exist_ok=True)
-            cur_features = [pixel_features[i], hog_features[i], cnn_features[i], canny_features[i], pose_features[i], body_parts_features[i]]
+            cur_features = [pixel_features[i], hog_features[i], cnn_features[i], canny_features[i], pose_features[i]]
             torch.save(cur_features, f'{cur_folder}/{filename}.pt')
 
     def load_feature_vectors(self, output_base, filenames, labels):
@@ -193,7 +194,7 @@ class FeatureExtractor:
         for i, filename in enumerator:
             cur_label = labels[i]
             cur_folder = f'{output_base}/c{cur_label}'
-            [cur_pixels, cur_hogs, cur_cnn, cur_canny, cur_pose, cur_body_parts] = torch.load(f'{cur_folder}/{filename}.pt')
+            [cur_pixels, cur_hogs, cur_cnn, cur_canny, cur_pose] = torch.load(f'{cur_folder}/{filename}.pt')
             _, keypoints_feature, (rh_angle, lh_angle) = self._keypoint_offsets_for(cur_label, filename)
             right_hand_angles.append(rh_angle)
             left_hand_angles.append(lh_angle)
@@ -205,14 +206,14 @@ class FeatureExtractor:
             cnn_features.append(cur_cnn)
             canny_features.append(cur_canny)
             pose_features.append(cur_pose)
-            body_parts_features.append(cur_body_parts)
+            # body_parts_features.append(cur_body_parts)
         return [np.array(pixel_features), 
                 np.array(hog_features),
                 np.array(cnn_features),
                 np.array(canny_features),
                 np.array(pose_features),
                 np.array(keypoints_features),
-                np.array(body_parts_features),
+                # np.array(body_parts_features),
                 np.array(right_hand_angles),
                 np.array(left_hand_angles)]
 
@@ -250,7 +251,7 @@ class FeatureExtractor:
             for cur_type in image_types:
                 row.append(cur_image_map[cur_type])
             if pbar is not None:
-              pbar.update(1)
+                pbar.update(1)
             stack.append(row)
         return stack
 

@@ -63,8 +63,8 @@ class FaceConfig:
 
 class Configuration:
     def __init__(self):
-        self.INPUT_FOLDER = '/Users/rasentha/mids/w281/project/w281-fall2022-section2-team3/input'
-        self.OUTPUT_FOLDER = '/Users/rasentha/mids/w281/project/w281-fall2022-section2-team3/output'
+        self.INPUT_FOLDER = '../input'
+        self.OUTPUT_FOLDER = '../output'
 
         self.TRAIN_DATA = f'{self.INPUT_FOLDER}/state-farm-distracted-driver-detection/imgs/train'
         self.DLIB_MODELS_FOLDER = f'{self.INPUT_FOLDER}/dlib_models'

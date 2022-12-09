@@ -61,7 +61,8 @@ class MainDataset(CustomDataset):
         self.transformers = transformers
         self.image_types = image_types
         self.should_load_images = should_load_images
-        self.labels = None if labels is None or len(labels) == 0 else labels
+        # self.labels = None if labels is None or len(labels) == 0 else labels
+        self.labels = None if type(labels) != list else labels
         self.__load_data()
 
     def __len__(self):

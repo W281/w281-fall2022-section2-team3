@@ -105,7 +105,7 @@ class SampleSplitter:
             #      transformers=None, label=None, should_load_images=True
             dataset = customdataset.MainDataset(self.config, self.face_config, self.pose_config,
                                                 sample_type=enums.SampleType.WITH_JUST_ONE_FACE,
-                                                label=label, should_load_images=False)
+                                                labels=label, should_load_images=False)
             # Random shuffling is important
             dataloader = DataLoader(dataset, num_workers=0, batch_size=1,
                                     shuffle=True, collate_fn=dataset.get_image_from)
