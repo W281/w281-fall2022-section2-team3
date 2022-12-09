@@ -94,7 +94,8 @@ class ModelSummarizer:
                         y.copy(), dataset_name=dataset_name,
                         model_name='logistic', feature_name='keypoints',
                         model_filename = 'model_logistic_keypoints.pkl',
-                        scaler_file_name = 'scaler_logistic_keypoints.pkl')
+                        scaler_file_name = 'scaler_logistic_keypoints.pkl',
+                        best_params=True)
         
         print(f'Random Forest Using Keypoints against {dataset_name} Dataset')
         print('========================================================================================')
