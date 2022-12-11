@@ -13,10 +13,9 @@ import transformers
 import customdataset
 from torch.utils.data import DataLoader
 import pandas as pd
-from tf_bodypix.api import load_model, download_model, BodyPixModelPaths
+import tf_bodypix.api
 import math
 import copy
-
 
 class FeatureExtractor:
     def __init__(self, config, face_config, pose_config, tqdm):
@@ -95,44 +94,59 @@ class FeatureExtractor:
             xpca_list.append(X_pca)
         return pca_list, xpca_list
 
+    def _get_bp_feature_for(self, color, color_channel, verbose=False):
+        channel_color_code = color[1]
+        this_coord = np.argwhere(color_channel == channel_color_code)
+        if verbose:
+            print(f'color_channel:{color_channel.shape}')
+            print(f'color_channel:{color_channel}')
+            print(this_coord)
+        bp_feature = []
+        if len(this_coord) > 0:
+            x_coord, y_coord = this_coord[:, 1], -this_coord[:, 0]
+            # Estimate center
+            center_x, center_y = np.mean(x_coord), np.mean(y_coord)
+            # Estimate orientation
+            z = np.polyfit(x_coord, y_coord, 1)
+            orientation_in_rad = np.arctan(z[0])
+            return [center_x, center_y, orientation_in_rad], True
+        else:
+            return [None, None, None], False
+
     #Arms' location and anle with BodyPix:
-    def get_body_part_features(self, base_folder, labels, image_files):
+    def get_body_part_features_for(self, base_folder, labels, image_files, save_masks=False):
         # Part of body that needs to be segmented out
         parts_of_interest = [
             'left_lower_arm_back',  # (255, 115, 75)
             'right_lower_arm_front',  # (255, 140, 56)
         ]
         out_feat = []
-        bp_model = load_model(download_model(BodyPixModelPaths.RESNET50_FLOAT_STRIDE_16))
+        bp_model = tf_bodypix.api.load_model(tf_bodypix.api.download_model(
+            tf_bodypix.api.BodyPixModelPaths.RESNET50_FLOAT_STRIDE_16))
         enumerator = enumerate(images) if self.tqdm is None else self.tqdm(enumerate(image_files), unit='images', desc='Building Body-Part Features', total=len(image_files))
         for i, image_file in enumerator:
             img = cv.imread(f'{base_folder}/c{labels[i]}/{image_file}')
             prediction = bp_model.predict_single(img)
             mask = prediction.get_mask(threshold=0.5).numpy().astype(np.uint8)
             colored_mask = prediction.get_colored_part_mask(mask, part_names=parts_of_interest)
-            body_parts = [
-                ['left_lower_arm_back', (255, 115, 75)],
-                ['right_lower_arm_front', (255, 140, 56)]
-            ]
+            colored_mask = colored_mask.astype(np.uint8)
+            # print(f'colored_mask:{colored_mask[colored_mask > 0]}')
+            if save_masks:
+                cv.imwrite(f'{base_folder}/tt/c{labels[i]}_mask_{image_file}.png', mask)
+                cv.imwrite(f'{base_folder}/tt/c{labels[i]}_cmask_{image_file}.png', colored_mask)
             channel_1 = colored_mask[:, :, 1]
-            this_bp_features = list()
-            for this_part in body_parts:
-                channel_color_code = this_part[1][1]
-                this_coord = np.argwhere(channel_1 == channel_color_code)
-                # Check if this body part was detected
-                if len(this_coord) > 0:
-                    x_coord, y_coord = this_coord[:, 1], -this_coord[:, 0]
-                    # Estimate center
-                    center_x, center_y = np.mean(x_coord), np.mean(y_coord)
-                    # Estimate orientation
-                    z = np.polyfit(x_coord, y_coord, 1)
-                    orientation_in_rad = np.arctan(z[0])
-                    this_bp_features += [center_x, center_y, orientation_in_rad]
-                else:
-                    this_bp_features += [None, None, None]
-            out_feat.append(this_bp_features)
-        # Might have to use vstack or hstack depending on how features are indexed for later use
-        return np.vstack(out_feat)
+            left_arm_feature, l_exists = self._get_bp_feature_for([255, 115, 75], channel_1) # (255, 115, 75) is color for left arm
+            right_arm_feature, r_exists = self._get_bp_feature_for([255, 140, 56], channel_1) # (255, 140, 56) is color for right arm
+            out_feat.append([image_file, labels[i], *left_arm_feature, *right_arm_feature])
+        return pd.DataFrame(np.vstack(out_feat), columns=['filename', 'label', 'LeftCenterX', 'LeftCenterY', 'LeftOrient', 'RightCenterX', 'RightCenterY', 'RightOrient'])
+
+    def get_body_part_features(self, out_csv=None, count_per_label=None):
+        data = self.load_data(image_types=None, sample_type=enums.SampleType.TRAIN_TEST_VALIDATION, shuffle=True, count_per_label=count_per_label)
+        df = self.get_body_part_features_for(self.config.TRAIN_DATA, data['label'], data['filename'], save_masks=False)
+        if out_csv is not None:
+            df.to_csv(f'{self.config.OUTPUT_FOLDER}/{out_csv}', index=False)
+        return df
+        
 
     def detect_eyes(self, base_folder, labels, image_files, count=None):
         # create a list to store number of eyes detected
@@ -175,7 +189,8 @@ class FeatureExtractor:
             cur_label = labels[i]
             cur_folder = f'{output_base}/c{cur_label}'
             Path(cur_folder).mkdir(parents=True, exist_ok=True)
-            cur_features = [pixel_features[i], hog_features[i], cnn_features[i], canny_features[i], pose_features[i], body_parts_features[i]]
+            cur_features = [pixel_features[i], hog_features[i], cnn_features[i], canny_features[i], pose_features[i], 
+                None if body_parts_features is None else body_parts_features[i]]
             torch.save(cur_features, f'{cur_folder}/{filename}.pt')
 
     def load_feature_vectors(self, output_base, filenames, labels, features=None):
@@ -454,3 +469,23 @@ class FeatureExtractor:
                                      
         df = pd.DataFrame(rows, columns=col_names)
         return df
+
+    def summarize_features(self, image_types, count_per_label=None):
+        data = self.load_data(image_types=image_types, count_per_label=count_per_label, 
+            sample_type=enums.SampleType.TRAIN_TEST_VALIDATION, shuffle=True)
+
+        # load pre-generated features. The actual feature generation code is in 1.eda.ipynb notebook.
+        features_list = self.load_feature_vectors(self.config.FEATURE_VECTORS_FOLDER, 
+            data[enums.DataColumn.FILENAME.value], data[enums.DataColumn.LABEL.value], 
+            features=set([enums.FeatureType.PIXEL, enums.FeatureType.HOG,
+                          enums.FeatureType.CNN, enums.FeatureType.CANNY,
+                          enums.FeatureType.POSE, enums.FeatureType.KEYPOINTS]))
+        [pixel_features, hog_features, cnn_features, canny_features, pose_features, keypoints_features, _, _] = features_list
+        print(f'Loaded {data.shape[0]} samples.')
+        print(f'hog_features:{hog_features.shape}, hog_features.min:{np.min(hog_features)}, hog_features.max:{np.max(hog_features)}')
+        print(f'pixel_features:{pixel_features.shape}, pixel_features.min:{np.min(pixel_features)}, pixel_features.max:{np.max(pixel_features)}')
+        print(f'cnn_features:{cnn_features.shape}, cnn_features.min:{np.min(cnn_features)}, cnn_features.max:{np.max(cnn_features)}')
+        print(f'canny_features:{canny_features.shape}, canny_features.min:{np.min(canny_features)}, canny_features.max:{np.max(canny_features)}')
+        print(f'pose_features:{pose_features.shape}, pose_features.min:{np.min(pose_features)}, pose_features.max:{np.max(pose_features)}')
+        print(f'keypoints_features:{keypoints_features.shape}, keypoints_features.min:{np.min(keypoints_features)}, keypoints_features.max:{np.max(keypoints_features)}')
+        print()

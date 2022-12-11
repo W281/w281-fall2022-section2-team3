@@ -562,7 +562,7 @@ def extract_poses(config, output_base, summary_file_name, reduced=False, limit=N
                 tf.keras.utils.save_img(op_pose, pose_img)
                 tf.keras.utils.save_img(op_annotated, annotated)
             # summary.append([batch_idx, label, filename])    
-                total_images = total_images + 1
+            total_images = total_images + 1
             # df_summary = pd.DataFrame(summary, columns=summary_cols)
             # df_summary.to_csv(f'{output_base}/{summary_file_name}', mode='a', index=False, header=False)
         

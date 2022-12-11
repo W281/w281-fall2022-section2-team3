@@ -25,7 +25,11 @@ xcuserdata/
 .build/
 
 input/
-output/
+output/faces/
+output/poses/
+output/saved_models/
+output/segmentation/
+outut/vgg_model_tf_saved/
 .ipynb_checkpoints/
 
 *.pyc

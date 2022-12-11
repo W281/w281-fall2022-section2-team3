@@ -42,7 +42,6 @@ class FaceExtractor:
                   break
           img, label, filename = samples
           if pbar is not None:
-              pbar.set_description('Processing {:<14}'.format(filename))
               pbar.update(1)
 
           filename = os.path.basename(filename)
@@ -113,7 +112,6 @@ class SampleSplitter:
             for sample_num, sample in enumerate(dataloader):
                 _, _, filename = sample
                 if pbar is not None:
-                    pbar.set_description(f'Processing {filename}')
                     pbar.update(1)
                 if filename in samples:
                     print(f'WARN: duplicate filename {filename}')

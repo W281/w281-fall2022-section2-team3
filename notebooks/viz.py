@@ -476,3 +476,136 @@ class Vizualizer:
         axes[2].set_title("Performance of the model")
 
         return plt
+
+    def plot_PCA(self, X_list, names, n_components, max_components, out_file):
+        feature_extractor = feature_helpers.FeatureExtractor(self.config, self.face_config, self.pose_config, self.tqdm)
+        pca_list, xpca_list = feature_extractor.get_PCA(X_list, n_components=n_components)
+        plt.figure(figsize=(15,5))
+        colors = ['b-', 'g-', 'r-', 'k-', 'y-']
+        plot_labels = [f'{name} features' for name in names]
+        for i in range(len(X_list)):
+            plt.plot(np.cumsum(pca_list[i].explained_variance_ratio_), colors[i], label=plot_labels[i])
+        # plt.xticks(np.arange(max_components)+1)
+        plt.yticks(np.linspace(0, 1, 8))
+        plt.grid(visible=True)
+        plt.xlabel('Number of components')
+        plt.ylabel('Explained Variances')
+        plt.legend()
+        plt.title('Explaining Power Of Principal Components')
+        plt.tight_layout(pad=0.1, h_pad=None, w_pad=None, rect=None)
+        plt.savefig(f'{self.config.OUTPUT_FOLDER}/report_plots/{out_file}', dpi=300)
+        plt.show()
+
+    def plot_classes(self, X, y, ax, title, included_labels):
+        colormap = plt.cm.gist_rainbow # hsv tab20 #nipy_spectral #, Set1,Paired
+        colorst = [colormap(i) for i in np.linspace(0, 1.0, len(np.unique(y)))]
+        markers = ['o', 'v', 's', 'p', 'x', '>', '*', '<', 'P', '^']
+        for k, label in enumerate(included_labels):
+            marker = markers[k % len(markers)]
+            if X.shape[1] == 2:
+                ax.scatter(X[y==label, 0], X[y==label, 1], facecolors=colorst[k], marker=marker, label=self.config.class_dict[label])
+            else:
+                ax.scatter(X[y==label, 0], X[y==label, 1], X[y==label, 2], facecolors=colorst[k], marker=marker, label=self.config.class_dict[label])
+        ax.set_title(title)
+        
+    def plot_components(self, features_list, y, X_pcas, X_tsnes, names, included_labels=None, out_file='clustering.jpg'):
+        if included_labels is None:
+            included_labels = self.config.class_dict.keys()
+
+        # project the features into 2 dimensions
+        fig, ax = plt.subplots(nrows=len(features_list), ncols=2, figsize=(5 * len(features_list), 15))
+        if len(features_list) == 1:
+            ax = [ax]
+
+        # y is the class labels
+        for i in range(len(features_list)):
+            self.plot_classes(X_pcas[i], y, ax[i][0], title=f'{names[i]} PCA', included_labels=included_labels)
+            self.plot_classes(X_tsnes[i], y, ax[i][1], title=f'{names[i]} tSNE', included_labels=included_labels)
+        
+        handles, plot_labels = ax[0][0].get_legend_handles_labels()
+        fig.legend(handles, plot_labels, loc='upper center')
+        plt.tight_layout(pad=0.1, h_pad=None, w_pad=12, rect=None)
+        plt.savefig(f'{self.config.OUTPUT_FOLDER}/report_plots/{out_file}', dpi=300)
+        plt.show()
+
+
+    def plot_bp_samples(self, features_csv, out_file):
+        df = pd.read_csv(f'{self.config.OUTPUT_FOLDER}/{features_csv}')
+        df_without_na = df.dropna().copy()
+        print(f'Total no. rows: {df.shape[0]}, Rows with no nulls: {df.dropna().shape[0]}')
+
+        num_images = 4
+        if df_without_na.shape[0] < num_images:
+            to_show = df_without_na
+        else:
+            to_show = df_without_na.sample(num_images).copy()
+        
+        fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(10, 8))
+        axes = ax.flatten()
+        for ctr, (i, row) in enumerate(to_show.iterrows()):
+            filename = row['filename']
+            label = row['label']
+            source_image_path = f"{self.config.TRAIN_DATA}/c{label}/{filename}"
+            source_image = plt.imread(source_image_path)
+
+            # Display image
+            ax = axes[ctr]
+            ax.imshow(source_image)
+
+            # Display left arm orientation
+            center_x_left, center_y_left, orient_left = to_show.at[i, 'LeftCenterX'], to_show.at[i, 'LeftCenterY'], to_show.at[i, 'LeftOrient']
+            center_x_left = float(center_x_left)
+            center_y_left = -float(center_y_left)
+            orient_left = float(orient_left)
+            orient_x_left, orient_y_left = center_x_left + 100*np.cos(orient_left), center_y_left - 100*np.sin(orient_left)
+            ax.plot(center_x_left, center_y_left, 'r*')
+            ax.annotate("", xy=(orient_x_left, orient_y_left), xytext=(center_x_left, center_y_left),
+                        arrowprops=dict(facecolor='black', arrowstyle='->', lw=3))
+
+            # Display right arm orientation
+            center_x_right, center_y_right, orient_right = to_show.at[i, 'RightCenterX'], to_show.at[i, 'RightCenterY'], to_show.at[i, 'RightOrient']
+            center_x_right = float(center_x_right)
+            center_y_right = -float(center_y_right)
+            orient_right = float(orient_right)
+            orient_x_right, orient_y_right = center_x_right + 100 * np.cos(orient_right), center_y_right - 100 * np.sin(orient_right)
+            ax.plot(center_x_right, center_y_right, 'r*')
+            ax.annotate("", xy=(orient_x_right, orient_y_right), xytext=(center_x_right, center_y_right),
+                        arrowprops=dict(facecolor='black', arrowstyle='->', lw=3))
+
+        plt.suptitle('Detected arms with orientations', fontsize=14)
+        plt.tight_layout()
+        if out_file is not None:
+            plt.savefig(f'{self.config.OUTPUT_FOLDER}/report_plots/{out_file}', dpi=300)
+        plt.show()
+
+    def plot_body_parts_feature_distribution(self, features_csv, out_file):
+        df = pd.read_csv(f'{self.config.OUTPUT_FOLDER}/{features_csv}')
+        df_without_na = df.dropna()
+        class_tags = df['label'].unique()
+        # class_tag_names = [self.config.class_dict[label] for label in class_tags]
+        list_left_arm_orients = list()
+        for this_tag in class_tags:
+            left_arm_orients = df_without_na.loc[df['label'] == this_tag]['LeftOrient'].tolist()
+            list_left_arm_orients.append(left_arm_orients)
+        # Plot box-plot for right arm
+        ax = sns.boxplot(list_left_arm_orients)
+        ax.set_xticklabels(class_tags.tolist())
+        ax.set(xlabel='Class tags', ylabel='Orientation (in rad)', title='Left arm orientations across different classes')
+        if out_file is not None:
+            plt.savefig(f'{self.config.OUTPUT_FOLDER}/report_plots/left_{out_file}', dpi=300)
+        plt.show()
+
+        # Get box plots information for right arm-orientation
+        df_without_na = df.dropna()
+        class_tags = df['label'].unique()
+        list_right_arm_orients = list()
+        for this_tag in class_tags:
+            right_arm_orients = df_without_na.loc[df['label'] == this_tag]['RightOrient'].tolist()
+            list_right_arm_orients.append(right_arm_orients)
+        # Plot box-plot for right arm
+        ax = sns.boxplot(list_right_arm_orients)
+        ax.set_xticklabels(class_tags.tolist())
+        ax.set(xlabel='Class tags', ylabel='Orientation (in rad)', title='Right arm orientations across different classes')
+        if out_file is not None:
+            plt.savefig(f'{self.config.OUTPUT_FOLDER}/report_plots/right_{out_file}', dpi=300)
+        plt.show()
